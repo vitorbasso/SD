@@ -30,7 +30,7 @@ class Client:
             Client.print_menu()
             command = input()
 
-            if command == "EXIT":
+            if command == "sair":
                 self.event.set()
                 self.sock.close()
                 break
@@ -65,11 +65,11 @@ class Client:
 
     @staticmethod
     def print_menu():
-        print("To add a new entry type CREATE <number> <message>\n"
-              "To read an entry type READ <number>\n"
-              "To modify an entry type UPDATE <number> <message>\n"
-              "To remove an entry type DELETE <number>\n"
-              "To close type 'EXIT': \n")
+        print("To add a new entry type CREATE <id> <message>\n"
+              "To read an entry type READ <id>\n"
+              "To modify an entry type UPDATE <id> <message>\n"
+              "To remove an entry type DELETE <id>\n"
+              "To close type 'sair': \n")
         
 
     def start(self):
