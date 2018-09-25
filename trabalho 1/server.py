@@ -69,8 +69,22 @@ class Server:
 
         self.recv_queue = queue.Queue(maxsize = -1)
         self.log_queue = queue.Queue(maxsize = -1)
-        self.process_queue = queue.Queue(maxsize = -1)
+        self.execution_queue = queue.Queue(maxsize = -1)
 
+        self.hash = {}
+
+#=====================================================================================================================================
+
+#=====================================================================================================================================
+
+    def loadDataBase(self):
+        try:
+            with open("logfile.txt", 'r') as log:
+                for line in log:
+                    self.execute_command(True, line)
+        except:
+            pass
+        
 #=====================================================================================================================================
 
 #=====================================================================================================================================
@@ -94,7 +108,7 @@ class Server:
             if not self.recv_queue.empty():
                 connection, client_address, data = self.recv_queue.get()
                 self.log_queue.put((client_address, data))
-                self.process_queue.put((connection, data))
+                self.execution_queue.put((connection, data))
 #=====================================================================================================================================
 
 #=====================================================================================================================================
@@ -113,30 +127,52 @@ class Server:
 
 #=====================================================================================================================================
 #Executa os comandos em F3
- 
-    def execute_command(self, reload = False, data = ""):
+    def execute_command(self, starting = False, data = ""):
         while not self.event.is_set():
-            if not self.process_queue.empty() or reload:
-                if reload == False:
-                    _, data = self.process_queue.get()
+            if not self.execution_queue.empty() or starting:
+                if starting == False:
+                    connection, data = self.execution_queue.get()
                 
                 query = data.split()
                 user_command = query[0]
-                #key = int(query[1])
-                #user_data = " ".join(map(str, query[2:])) if len(query) > 2 else ""
+                key = int(query[1])
+                user_data = " ".join(map(str, query[2:])) if len(query) > 2 else ""
 
-                #response_message = ""
+                response = ""
 
                 if user_command == "CREATE":
-                    print("Server - CREATE")
+                    if not key in list(self.hash.keys()):
+                        self.hash[key] = user_data
+                        if not starting:
+                            response = "SUCESS: key: %d - value: %s created\n" % (key, self.hash[key])
+                    else:
+                        response = "ERROR: key already in the data base\n"
                 elif user_command == "READ":
                     print("Server - READ")
+                    if key in list(self.hash.keys()):
+                        response = ("key: %d - value: %s\n" % (key, self.hash[key]))
+                    else:
+                        response = "ERROR: key doesnt exist in data base\n"
                 elif user_command == "UPDATE":
-                    print("Server - UPDATE")
+                    if key in list(self.hash.keys()):
+                        self.hash[key] = user_data
+                        response = "SUCESS: key: %d - value: %s updated\n" % (key, self.hash[key])
+                    else:
+                        response = "ERROR: Key doesnt exist in data base\n"
                 elif user_command == "DELETE":
-                    print("Server - DELETE")
+                    if key in list(self.hash.keys()):
+                        response = "SUCESS: key: %d - value: %s deleted\n" % (key, self.hash[key])
+                        self.hash.pop(key)
+                    else:
+                        response = "ERROR: Key doesnt exist in data base\n"
                 else:
-                    print("%s nao e um comando valido" % user_command)
+                    response = "%s nao e um comando valido" % user_command
+
+                if not starting:
+                    connection.send(response.encode())
+                else:
+                    break
+            
 #=====================================================================================================================================
 
 #=====================================================================================================================================
@@ -145,16 +181,18 @@ class Server:
         while True:
             try:
                 connection, client_address = self.sock.accept()
-                workerT = threading.Thread(target = self.recv_command, args = (connection, client_address))
-                workerT.setDaemon(True)
-                workerT.start()
+                receiveT = threading.Thread(target = self.recv_command, args = (connection, client_address))
+                receiveT.setDaemon(True)
+                receiveT.start()
             except KeyboardInterrupt:
                 self.event.set()
                 print("\nClosed by admin")
                 self.sock.close()
                 break
 #=====================================================================================================================================
-    def run(self):
+    def start(self):
+        self.loadDataBase()
+
         enqueue_thread = threading.Thread(target = self.transport_command)
         enqueue_thread.setDaemon(True)
         enqueue_thread.start()
@@ -180,4 +218,4 @@ class Server:
 
 if __name__ == '__main__':
     server = Server()
-    server.run()
+    server.start()

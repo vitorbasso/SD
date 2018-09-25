@@ -32,6 +32,7 @@ class Client:
 
             if command == "EXIT":
                 self.event.set()
+                self.sock.close()
                 break
             elif self.check_command(command):
                 self.sock.send(command.encode())
@@ -44,7 +45,7 @@ class Client:
         if len(query) <= 0:
             return False
         elif query[0] == "CREATE" or query[0] == "UPDATE":
-            if len(query) >= 3 and query[1].isdigit():
+            if len(query) >= 2 and query[1].isdigit():
                 return True
         elif query[0] == "READ" or query[0] == "DELETE":
             if len(query) == 2 and query[1].isdigit():
@@ -52,15 +53,40 @@ class Client:
 
         return False
 
+    def receive_result(self):
+        while not self.event.is_set():
+            message = self.sock.recv(self.buffer_size).decode()
+            if not message:
+                self.event.set()
+                break
+            print(message)
+            print("\n")
+            
+
     @staticmethod
     def print_menu():
         print("To add a new entry type CREATE <number> <message>\n"
               "To read an entry type READ <number>\n"
               "To modify an entry type UPDATE <number> <message>\n"
               "To remove an entry type DELETE <number>\n"
-              "To close type 'sair': \n")
+              "To close type 'EXIT': \n")
         
 
+    def start(self):
+        recv_thread = threading.Thread(target = self.receive_result)
+        recv_thread.setDaemon(True)
+        recv_thread.start()
 
-cliente = Client()
-cliente.issue_command()
+        issue_thread = threading.Thread(target = self.issue_command)
+        issue_thread.setDaemon(True)
+        issue_thread.start()
+
+        issue_thread.join()
+        if recv_thread.is_alive():
+            time.sleep(5)
+        else:
+            print("Server is down")
+
+if __name__ == '__main__':
+    cliente = Client()
+    cliente.start()
