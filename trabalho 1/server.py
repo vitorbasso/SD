@@ -103,7 +103,7 @@ class Server:
 
     def recv_command(self, connection, client_address):
 
-        print("New connection from ", client_address)
+        print("\nNew connection from %s\n" % str(client_address))
 
         while not self.event.is_set():
             data = connection.recv(self.buffer_size).decode()
