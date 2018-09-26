@@ -10,6 +10,10 @@ DEFAULT_BUFFER_SIZE = 1024
 class Server:
 
 #=====================================================================================================================================
+
+#=====================================================================================================================================
+#Construtor - inicializa as configurações para estabelecer conexões sockets, cria as filas F1, F2 e F3 e o banco de dados (em memória -> dicionário do python)
+
     def __init__(self):
         
         #Cria o socket TCP/IP    
@@ -71,7 +75,7 @@ class Server:
         self.log_queue = queue.Queue(maxsize = -1)
         self.execution_queue = queue.Queue(maxsize = -1)
 
-        self.hash = {}
+        self.data_base = {}
 
 #=====================================================================================================================================
 
@@ -80,6 +84,7 @@ class Server:
     def loadDataBase(self):
         try:
             with open("logfile.txt", 'r') as log:
+                print("Restoring from log\n")
                 for line in log:
                     self.execute_command(True, line)
         except:
@@ -126,11 +131,12 @@ class Server:
 #=====================================================================================================================================
 
 #=====================================================================================================================================
-#Executa os comandos em F3
-    def execute_command(self, starting = False, data = ""):
+#Executa os comandos em F3 - utilizando das funções CRUD
+
+    def execute_command(self, set_up = False, data = ""):
         while not self.event.is_set():
-            if not self.execution_queue.empty() or starting:
-                if starting == False:
+            if not self.execution_queue.empty() or set_up:
+                if set_up == False:
                     connection, data = self.execution_queue.get()
                 
                 query = data.split()
@@ -139,36 +145,27 @@ class Server:
                 user_data = " ".join(map(str, query[2:])) if len(query) > 2 else ""
 
                 response = ""
+                server_info = ""
+
 
                 if user_command == "CREATE":
-                    if not key in list(self.hash.keys()):
-                        self.hash[key] = user_data
-                        if not starting:
-                            response = "SUCESS: key: %d - value: %s created\n" % (key, self.hash[key])
-                    else:
-                        response = "ERROR: key already in the data base\n"
+                    response = self.create(key, user_data)
+                    server_info = "SERVER - CREATE\n"
                 elif user_command == "READ":
-                    print("Server - READ")
-                    if key in list(self.hash.keys()):
-                        response = ("key: %d - value: %s\n" % (key, self.hash[key]))
-                    else:
-                        response = "ERROR: key doesnt exist in data base\n"
+                    response = self.read(key)
+                    server_info = "SERVER - READ\nSUCESS: "
                 elif user_command == "UPDATE":
-                    if key in list(self.hash.keys()):
-                        self.hash[key] = user_data
-                        response = "SUCESS: key: %d - value: %s updated\n" % (key, self.hash[key])
-                    else:
-                        response = "ERROR: Key doesnt exist in data base\n"
+                    response = self.update(key, user_data)
+                    server_info = "SERVER - UPDATE\n"
                 elif user_command == "DELETE":
-                    if key in list(self.hash.keys()):
-                        response = "SUCESS: key: %d - value: %s deleted\n" % (key, self.hash[key])
-                        self.hash.pop(key)
-                    else:
-                        response = "ERROR: Key doesnt exist in data base\n"
+                    response = self.delete(key)
+                    server_info = "SERVER - DELETE\n"
                 else:
                     response = "%s nao e um comando valido" % user_command
 
-                if not starting:
+
+                if not set_up:
+                    print(server_info + response)
                     connection.send(response.encode())
                 else:
                     break
@@ -176,7 +173,52 @@ class Server:
 #=====================================================================================================================================
 
 #=====================================================================================================================================
-    def main_loop(self):
+
+#Funções correspondentes ao CRUD
+
+#===============================
+
+    def create(self, key, value):
+        if not key in list(self.data_base.keys()):
+            self.data_base[key] = value
+            response = "SUCESS: key: %d - value: <%s> created\n" % (key, self.data_base[key])
+        else:
+            response = "ERROR: key already in the data base\n"
+        return response
+#=====================
+
+    def read(self, key):
+        if key in list(self.data_base.keys()):
+            response = ("key: %d - value: %s\n" % (key, self.data_base[key]))
+        else:
+            response = "ERROR: key doesnt exist in data base\n"
+        return response
+#=====================
+
+    def update(self, key, value):
+        if key in list(self.data_base.keys()):
+            self.data_base[key] = value
+            response = "SUCESS: key: %d - value: %s updated\n" % (key, self.data_base[key])
+        else:
+            response = "ERROR: Key doesnt exist in data base\n"
+        return response
+#=====================
+
+    def delete(self, key):
+        if key in list(self.data_base.keys()):
+            response = "SUCESS: key: %d - value: %s deleted\n" % (key, self.data_base[key])
+            self.data_base.pop(key)
+        else:
+            response = "ERROR: Key doesnt exist in data base\n"
+        return response
+#=====================
+
+#=====================================================================================================================================
+
+#=====================================================================================================================================
+#Essa função é o loop principal do programa - que roda na thread inicial - ele escuta por conexões e cria threads para gerenciá-las
+
+    def run(self):
         print("Servidor recebendo conexoes")
         while True:
             try:
@@ -189,32 +231,33 @@ class Server:
                 print("\nClosed by admin")
                 self.sock.close()
                 break
+
+#=====================================================================================================================================1
+
 #=====================================================================================================================================
+#Função a ser chamada para iniciar o servidor - cria as threads e começa a receber conexões
+
     def start(self):
         self.loadDataBase()
 
-        enqueue_thread = threading.Thread(target = self.transport_command)
-        enqueue_thread.setDaemon(True)
-        enqueue_thread.start()
-
-        execute_thread = threading.Thread(target = self.execute_command)
-        execute_thread.setDaemon(True)
-        execute_thread.start()
+        transport_thread = threading.Thread(target = self.transport_command)
+        transport_thread.setDaemon(True)
+        transport_thread.start()
 
         log_thread = threading.Thread(target = self.log_command)
         log_thread.setDaemon(True)
         log_thread.start()
 
-        self.main_loop()
+        execute_thread = threading.Thread(target = self.execute_command)
+        execute_thread.setDaemon(True)
+        execute_thread.start()
+
+        self.run()
 #=====================================================================================================================================
 
 
 #=====================================================================================================================================
         
-
-
-
-
 
 if __name__ == '__main__':
     server = Server()
