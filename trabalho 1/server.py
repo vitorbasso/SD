@@ -89,9 +89,10 @@ class Server:
         try:
 
             with open("logfile.txt", 'r') as log:
-                print("Restoring from log\n")
+                print("Restoring from log - ")
                 for line in log:
                     self.execute_command(True, line)
+                print("Restored Sucessfuly!\n")
 
         except:
             pass

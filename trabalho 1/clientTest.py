@@ -18,6 +18,20 @@ class ClientTest(client.Client):
             print(response) 
         else:
             print("Invalid Command")
+        return response
+
+    def issue_silent_command(self, command):
+        
+        if command == "sair":
+            self.event.set()
+            self.sock.close()
+        elif self.is_valid(command):
+            #Se o comando for válido, envia ele para o servidor
+            self.sock.send(command.encode())
+            response = self.sock.recv(self.buffer_size).decode()
+        else:
+            print("Invalid Command")
+        return response
 
     def teste1(self):
         #TESTE 1
@@ -90,7 +104,31 @@ class ClientTest(client.Client):
         time.sleep(2)
 
     def teste4(self):
-        print("oi")
+        #TESTE 4
+        self.issue_command("CREATE 0 1")
+        v = self.issue_command("READ %d" % 0)
+        v = v[v.rfind('<')+1 : v.rfind('>')]
+        v = int(v)
+        for i in range(1, 1001, 4):         
+            self.issue_silent_command("CREATE %d %d" % (i, (v + 1)))
+            v = self.issue_silent_command("READ %d" % (i))
+            v = v[v.rfind('<')+1 : v.rfind('>')]
+            v = int(v)
+            self.issue_silent_command("CREATE %d %d" % (i + 1, (v + 1)))
+            v = self.issue_silent_command("READ %d" % (i + 1))
+            v = v[v.rfind('<')+1 : v.rfind('>')]
+            v = int(v)
+            self.issue_silent_command("CREATE %d %d" % (i + 2, (v + 1)))
+            v = self.issue_silent_command("READ %d" % (i+2))
+            v = v[v.rfind('<')+1 : v.rfind('>')]
+            v = int(v)
+            self.issue_silent_command("CREATE %d %d" % (i + 3, (v + 1)))
+            v = self.issue_silent_command("READ %d" % (i + 3))
+            v = v[v.rfind('<')+1 : v.rfind('>')]
+            v = int(v)
+            print(i)
+        
+        self.issue_command("READ 1000")
 
 
         
@@ -116,7 +154,7 @@ class ClientTest(client.Client):
         elif choice == 3:
             self.teste3()
         elif choice == 4:
-            self.teste3()
+            self.teste4()
         else:
             print("\nInvalido\n")
             
