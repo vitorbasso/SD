@@ -3,7 +3,15 @@ import socket
 import time
 
 class Client:
+
+#=====================================================================================================================================
+
+#=====================================================================================================================================
+#Construtor - Inicializa as configurações e estabelece conexão com o host usando os dados em settings.txt
+
     def __init__(self):
+
+        #Tenta pegar as informações do servidor de settings.txt para poder se conectar a ele - caso não haja settings.txt a conexão não será realizada
         try:
             with open("settings.txt", "r") as settings:
                 i = 0
@@ -20,75 +28,124 @@ class Client:
 
         print("Porta: %d, ip_address: %s" % (self.port, self.ip_address))
 
+        #Realiza a conexão com o servidor por meio de sockets
         self.event = threading.Event()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_address = (self.ip_address, self.port)
         self.sock.connect(self.server_address)
+        print(" conected")
+
+#=====================================================================================================================================
+
+#=====================================================================================================================================
+#Lê os comandos do usuário, os valida e, então, manda para o servidor executar
 
     def issue_command(self):
+        
         while not self.event.is_set():
-            Client.print_menu()
+            self.print_instructions()
             command = input()
 
             if command == "sair":
                 self.event.set()
                 self.sock.close()
                 break
-            elif self.check_command(command):
-                self.sock.send(command.encode())
+            elif self.is_valid(command):
+                #Se o comando for válido, envia ele para o servidor
+                self.sock.send(command.encode())        
             else:
                 print("Invalid Command")
+ 
+#=====================================================================================================================================
 
-    
-    def check_command(self, user_input):
+#=====================================================================================================================================
+#Recebe os comandos do usuário e verifica se estão formatados da maneira correta para serem processados pelo servidor
+   
+    def is_valid(self, user_input):
+
         query = user_input.split()
-        if len(query) <= 0:
+
+        if len(query) < 2:
             return False
-        elif query[0] == "CREATE" or query[0] == "UPDATE":
-            if len(query) >= 2 and query[1].isdigit():
+        elif query[1].isdigit():
+
+            if query[0] == "CREATE" or query[0] == "UPDATE":
                 return True
-        elif query[0] == "READ" or query[0] == "DELETE":
-            if len(query) == 2 and query[1].isdigit():
-                return True
+            elif query[0] == "READ" or query[0] == "DELETE":
+                if len(query) == 2:
+                    return True
 
         return False
 
-    def receive_result(self):
+
+
+#=====================================================================================================================================
+
+#=====================================================================================================================================
+#Recebe as respostas do servidor (OK e NOK) e as exibe ao usuário
+
+    def recv_result(self):
+
         while not self.event.is_set():
-            message = self.sock.recv(self.buffer_size).decode()
-            if not message:
+
+            server_response = self.sock.recv(self.buffer_size).decode()
+
+            if not server_response:
                 self.event.set()
                 break
-            print(message)
-            print("\n")
-            
 
-    @staticmethod
-    def print_menu():
-        print("To add a new entry type CREATE <id> <message>\n"
-              "To read an entry type READ <id>\n"
-              "To modify an entry type UPDATE <id> <message>\n"
-              "To remove an entry type DELETE <id>\n"
-              "To close type 'sair': \n")
-        
+            print("\nSERVER RESPONSE:\n%s" % server_response)
+            print("\n")
+
+#=====================================================================================================================================
+
+#=====================================================================================================================================
+#Simples função para formatar as instruções e facilitar para outras funções as printarem
+
+    def print_instructions(self):
+
+        print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"
+              "~                     INSTRUCTIONS:                     ~\n"
+              "~                                                       ~\n"
+              "~    * To insert a new value type CREATE <id> <value>   ~\n"
+              "~                                                       ~\n"
+              "~    * To modify a value type UPDATE <id> <value>       ~\n"
+              "~                                                       ~\n"
+              "~    * To read a value type READ <id>                   ~\n"
+              "~                                                       ~\n"
+              "~    * To remove a value type DELETE <id>               ~\n"
+              "~                                                       ~\n"
+              "~    * To close type 'sair'                             ~\n"
+              "~                                                       ~\n"
+              "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+
+#=====================================================================================================================================
+
+#=====================================================================================================================================
+#Função a ser chamada para iniciar o cliente - cria a thread de exibição e fica esperando por comandos
 
     def start(self):
-        display_thread = threading.Thread(target = self.receive_result)
+
+        display_thread = threading.Thread(target = self.recv_result)
         display_thread.setDaemon(True)
         display_thread.start()
 
-        issue_command_thread = threading.Thread(target = self.issue_command)
-        issue_command_thread.setDaemon(True)
-        issue_command_thread.start()
-
-        issue_command_thread.join()
+        self.issue_command()
 
         if display_thread.is_alive():
-            print("Terminando\n\n")
+            print("Shutting down in 5 seconds - (waiting for late responses)\n\n")
             time.sleep(5)
         else:
             print("Server is down")
 
+#=====================================================================================================================================
+
+#Fim da classe Client -----------------
+
+#=====================================================================================================================================
+  
+
 if __name__ == '__main__':
+    
     cliente = Client()
     cliente.start()
