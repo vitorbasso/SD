@@ -73,16 +73,18 @@ class Client:
         
 
     def start(self):
-        recv_thread = threading.Thread(target = self.receive_result)
-        recv_thread.setDaemon(True)
-        recv_thread.start()
+        display_thread = threading.Thread(target = self.receive_result)
+        display_thread.setDaemon(True)
+        display_thread.start()
 
-        issue_thread = threading.Thread(target = self.issue_command)
-        issue_thread.setDaemon(True)
-        issue_thread.start()
+        issue_command_thread = threading.Thread(target = self.issue_command)
+        issue_command_thread.setDaemon(True)
+        issue_command_thread.start()
 
-        issue_thread.join()
-        if recv_thread.is_alive():
+        issue_command_thread.join()
+
+        if display_thread.is_alive():
+            print("Terminando\n\n")
             time.sleep(5)
         else:
             print("Server is down")
