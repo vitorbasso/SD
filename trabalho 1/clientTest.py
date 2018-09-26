@@ -13,7 +13,9 @@ class ClientTest(client.Client):
             self.sock.close()
         elif self.is_valid(command):
             #Se o comando for válido, envia ele para o servidor
-            self.sock.send(command.encode())        
+            self.sock.send(command.encode())
+            response = self.sock.recv(self.buffer_size).decode()
+            print(response) 
         else:
             print("Invalid Command")
 
@@ -87,6 +89,9 @@ class ClientTest(client.Client):
         self.issue_command("CREATE 10 item 10")
         time.sleep(2)
 
+    def teste4(self):
+        print("oi")
+
 
         
 
@@ -104,24 +109,21 @@ class ClientTest(client.Client):
         self.print_choice()
         choice = int(input())
 
-        display_thread = threading.Thread(target = self.recv_result)
-        display_thread.setDaemon(True)
-        display_thread.start()
-
         if choice == 1:
             self.teste1()
         elif choice == 2:
             self.teste2()
         elif choice == 3:
             self.teste3()
+        elif choice == 4:
+            self.teste3()
+        else:
+            print("\nInvalido\n")
             
 
 
-        if display_thread.is_alive():
-            print("Shutting down in 5 seconds - (waiting for late responses)\n\n")
-            time.sleep(5)
-        else:
-            print("Server is down")
+        print("Shutting down in 5 seconds - (waiting for late responses)\n\n")
+        time.sleep(5)
 
   
 
