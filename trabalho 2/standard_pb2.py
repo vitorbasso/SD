@@ -19,10 +19,41 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='standard.proto',
   package='standard',
   syntax='proto3',
-  serialized_pb=_b('\n\x0estandard.proto\x12\x08standard\"=\n\x0fStandardRequest\x12\x0b\n\x03key\x18\x01 \x01(\x05\x12\r\n\x05value\x18\x02 \x01(\x05\x12\x0e\n\x06method\x18\x03 \x01(\t\"<\n\rStandardReply\x12\x0b\n\x03key\x18\x01 \x01(\x05\x12\r\n\x05value\x18\x02 \x01(\x05\x12\x0f\n\x07message\x18\x03 \x01(\t2\x88\x02\n\x08Standard\x12>\n\x06\x43reate\x12\x19.standard.StandardRequest\x1a\x17.standard.StandardReply\"\x00\x12<\n\x04Read\x12\x19.standard.StandardRequest\x1a\x17.standard.StandardReply\"\x00\x12>\n\x06Update\x12\x19.standard.StandardRequest\x1a\x17.standard.StandardReply\"\x00\x12>\n\x06\x44\x65lete\x12\x19.standard.StandardRequest\x1a\x17.standard.StandardReply\"\x00\x42\x17\x42\rStandardProtoP\x01\xa2\x02\x03STDb\x06proto3')
+  serialized_pb=_b('\n\x0estandard.proto\x12\x08standard\"\"\n\x0cResetRequest\x12\x12\n\npublic_key\x18\x01 \x01(\t\"=\n\x0fStandardRequest\x12\x0b\n\x03key\x18\x01 \x01(\x05\x12\r\n\x05value\x18\x02 \x01(\t\x12\x0e\n\x06method\x18\x03 \x01(\t\" \n\rStandardReply\x12\x0f\n\x07message\x18\x01 \x01(\t2\xc6\x02\n\x08Standard\x12>\n\x06\x43reate\x12\x19.standard.StandardRequest\x1a\x17.standard.StandardReply\"\x00\x12<\n\x04Read\x12\x19.standard.StandardRequest\x1a\x17.standard.StandardReply\"\x00\x12>\n\x06Update\x12\x19.standard.StandardRequest\x1a\x17.standard.StandardReply\"\x00\x12>\n\x06\x44\x65lete\x12\x19.standard.StandardRequest\x1a\x17.standard.StandardReply\"\x00\x12<\n\x07Restart\x12\x16.standard.ResetRequest\x1a\x17.standard.StandardReply\"\x00\x42\x17\x42\rStandardProtoP\x01\xa2\x02\x03STDb\x06proto3')
 )
 
 
+
+
+_RESETREQUEST = _descriptor.Descriptor(
+  name='ResetRequest',
+  full_name='standard.ResetRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='public_key', full_name='standard.ResetRequest.public_key', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=28,
+  serialized_end=62,
+)
 
 
 _STANDARDREQUEST = _descriptor.Descriptor(
@@ -41,8 +72,8 @@ _STANDARDREQUEST = _descriptor.Descriptor(
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='value', full_name='standard.StandardRequest.value', index=1,
-      number=2, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
@@ -65,8 +96,8 @@ _STANDARDREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=28,
-  serialized_end=89,
+  serialized_start=64,
+  serialized_end=125,
 )
 
 
@@ -78,22 +109,8 @@ _STANDARDREPLY = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='standard.StandardReply.key', index=0,
-      number=1, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='value', full_name='standard.StandardReply.value', index=1,
-      number=2, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='message', full_name='standard.StandardReply.message', index=2,
-      number=3, type=9, cpp_type=9, label=1,
+      name='message', full_name='standard.StandardReply.message', index=0,
+      number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -110,13 +127,21 @@ _STANDARDREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=91,
-  serialized_end=151,
+  serialized_start=127,
+  serialized_end=159,
 )
 
+DESCRIPTOR.message_types_by_name['ResetRequest'] = _RESETREQUEST
 DESCRIPTOR.message_types_by_name['StandardRequest'] = _STANDARDREQUEST
 DESCRIPTOR.message_types_by_name['StandardReply'] = _STANDARDREPLY
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
+
+ResetRequest = _reflection.GeneratedProtocolMessageType('ResetRequest', (_message.Message,), dict(
+  DESCRIPTOR = _RESETREQUEST,
+  __module__ = 'standard_pb2'
+  # @@protoc_insertion_point(class_scope:standard.ResetRequest)
+  ))
+_sym_db.RegisterMessage(ResetRequest)
 
 StandardRequest = _reflection.GeneratedProtocolMessageType('StandardRequest', (_message.Message,), dict(
   DESCRIPTOR = _STANDARDREQUEST,
@@ -142,8 +167,8 @@ _STANDARD = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   options=None,
-  serialized_start=154,
-  serialized_end=418,
+  serialized_start=162,
+  serialized_end=488,
   methods=[
   _descriptor.MethodDescriptor(
     name='Create',
@@ -178,6 +203,15 @@ _STANDARD = _descriptor.ServiceDescriptor(
     index=3,
     containing_service=None,
     input_type=_STANDARDREQUEST,
+    output_type=_STANDARDREPLY,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='Restart',
+    full_name='standard.Standard.Restart',
+    index=4,
+    containing_service=None,
+    input_type=_RESETREQUEST,
     output_type=_STANDARDREPLY,
     options=None,
   ),
