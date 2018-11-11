@@ -19,13 +19,13 @@ class Server:
         #Cria o socket TCP/IP    
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        #Adquiri o hostname local
+        #Adquire o hostname local
         self.local_hostname = socket.gethostname()
 
-        #Adquiri o fully qualified hostname
+        #Adquire o fully qualified hostname
         self.local_fqdn = socket.getfqdn()
 
-        #Adquiri o endereco ip
+        #Adquire o endereco ip
         self.ip_address = socket.gethostbyname(self.local_hostname)
 
         input_port = DEFAULT_PORT
