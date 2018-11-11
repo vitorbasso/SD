@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_outer_classname = "StandardProto";
+option objc_class_prefix = "STD";
+
+package standard;
+
+service Standard {
+  rpc Create (StandardRequest) returns (StandardReply) {}
+  rpc Read   (StandardRequest) returns (StandardReply) {}
+  rpc Update (StandardRequest) returns (StandardReply) {}
+  rpc Delete (StandardRequest) returns (StandardReply) {}
+}
+
+message StandardRequest {
+  int32 key = 1;
+  int32 value = 2;
+  string method = 3;
+}
+
+message StandardReply {
+  int32 key = 1;
+  int32 value = 2;
+  string message = 3;
+}

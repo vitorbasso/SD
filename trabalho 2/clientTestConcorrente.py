@@ -130,10 +130,6 @@ class ClientTest(client.Client):
                 
     def start(self, id):
 
-        """display_thread = threading.Thread(target = self.recv_result)
-        display_thread.setDaemon(True)
-        display_thread.start()"""
-
         self.teste3(id)
         input("\nRESTART SERVER\n")
         self.teste4(id)
