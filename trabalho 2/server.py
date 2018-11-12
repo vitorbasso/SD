@@ -14,6 +14,8 @@ import standard_pb2_grpc
 
 DEFAULT_PORT = 23456
 DEFAULT_BUFFER_SIZE = 1024
+DEFAULT_IP_ADDRESS = "127.0.1.1"
+DEFAULT_PUBLIC_KEY = "c144efbb-c793-4d57-b6ed-7ee40321656e"
 _ONE_DAY_IN_SECONDS = 60 * 60 * 24
 
 
@@ -48,7 +50,8 @@ class ServerNew(standard_pb2_grpc.StandardServicer):
                     elif i == 1:
                         self.buffer_size = int(line)
                     elif i == 2:
-                        self.ip_address = line.split('\n')[0]
+                        #self.ip_address = line.split('\n')[0]
+                        self.ip_address = line.rstrip()
                     elif i == 3:
                         self.public_key = line
                     i += 1
@@ -68,7 +71,10 @@ class ServerNew(standard_pb2_grpc.StandardServicer):
                 settings.write("\n" + str(input_buffer_size))
                 self.port = input_port
                 self.buffer_size = input_buffer_size
+                self.ip_address = DEFAULT_IP_ADDRESS
+                self.public_key = DEFAULT_PUBLIC_KEY
                 settings.write("\n" + str(self.ip_address))
+                settings.write("\n" + self.public_key)
         else:
             pass
 
@@ -81,11 +87,13 @@ class ServerNew(standard_pb2_grpc.StandardServicer):
 
         # Coloca o servidor para escutar conexoes
         # self.sock.listen()
+
         self.event = threading.Event()
 
         self.recv_queue = queue.Queue(maxsize=-1)
         self.log_queue = queue.Queue(maxsize=-1)
         self.execution_queue = queue.Queue(maxsize=-1)
+        self.chord_queue = queue.Queue(maxsize=-1)
 
         self.data_base = {}
 
