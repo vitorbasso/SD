@@ -23,16 +23,16 @@ class ServerNew(standard_pb2_grpc.StandardServicer):
     def __init__(self):
 
         # Cria o socket TCP/IP
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         # Adquiri o hostname local
-        self.local_hostname = socket.gethostname()
+        # self.local_hostname = socket.gethostname()
 
         # Adquiri o fully qualified hostname
-        self.local_fqdn = socket.getfqdn()
+        # self.local_fqdn = socket.getfqdn()
 
         # Adquiri o endereco ip
-        self.ip_address = socket.gethostbyname(self.local_hostname)
+        # self.ip_address = socket.gethostbyname(self.local_hostname)
 
         input_port = DEFAULT_PORT
         input_buffer_size = DEFAULT_BUFFER_SIZE
@@ -47,6 +47,10 @@ class ServerNew(standard_pb2_grpc.StandardServicer):
                         self.port = int(line)
                     elif i == 1:
                         self.buffer_size = int(line)
+                    elif i == 2:
+                        self.ip_address = line.split('\n')[0]
+                    elif i == 3:
+                        self.public_key = line
                     i += 1
         except IOError:
             with open("settings.txt", "w") as settings:
@@ -111,53 +115,50 @@ class ServerNew(standard_pb2_grpc.StandardServicer):
             self.recv_queue.put((connection, client_address, data))
         connection.close()
 
+    # Recebe os comandos GRPC e o coloca em F1
+    def recv_command_grpc(self, request, context):
+        print("Method: %s\n" % str(context._rpc_event.call_details.method))
+        if request and str(request.key) and (request.value or request.method == "READ" or request.method == "DELETE"):
+            reply = standard_pb2.StandardReply()
+            self.recv_queue.put((request, context, reply))
+            # TODO: Fazer método que espera enquanto requisição não está pronta.
+            while not reply.message:
+                a = 1
+            return reply
+        else:
+            return standard_pb2.StandardReply(message="ERROR: Req NOK.\n")
+
     # Pega os comandos de F1 e os transporta para F2 e F3
     def transport_command(self):
 
         while not self.event.is_set():
             if not self.recv_queue.empty():
-                # connection, client_address, data = self.recv_queue.get()
-                obj = self.recv_queue.get()
-                connection, client_address, data = obj
-                if (not connection and not client_address and not data):
-                    self.log_queue.put((client_address, data))
-                    self.execution_queue.put(
-                        (connection, client_address, data))
-                else:
-                    request, context, op = obj
-                    self.log_queue.put((request, context, op))
-                    #self.execution_queue.put((request, context, op))
+                request, context, reply = self.recv_queue.get()
+                self.log_queue.put((request, context))
+                self.execution_queue.put((request, context, reply))
 
     # Escreve os comandos de F2 para um arquivo log
     def log_command(self):
 
         with open('logfile.txt', 'a') as log:
-
             while not self.event.is_set():
                 if not self.log_queue.empty():
-                    # _, data = self.log_queue.get()
-                    obj = self.log_queue.get()
-                    connection, client_address, data = obj
-                    if (not connection and not client_address and not data):
-                        if data.split()[0] != "READ":
-                            log.write(data + "\n")
-                            log.flush()
-                    else:
-                        request, context, op = obj
-                        # print(context.name)
-                        if op != "READ":
-                            log.write(request.method + ' ' + str(request.key) +
-                                      ' ' + str(request.value) + "\n")
-                            log.flush()
+                    request, context = self.log_queue.get()
+                    if request.method != "READ":
+                        log.write(request.method + ' ' + str(request.key) +
+                                  ' ' + str(request.value) + "\n")
+                        log.flush()
 
     # Executa os comandos em F3 - utilizando das funções CRUD
     def execute_command(self, set_up=False, data=""):
 
         while not self.event.is_set():
-
             if not self.execution_queue.empty() or set_up:
                 if set_up == False:
-                    connection, client_address, data = self.execution_queue.get()
+                    request, context, reply = self.execution_queue.get()
+                    data = str(request.method) + ' '
+                    data += str(request.key) + ' '
+                    data += str(request.value)
 
                 query = data.split()
                 user_command = query[0]
@@ -168,6 +169,7 @@ class ServerNew(standard_pb2_grpc.StandardServicer):
                 response = ""
                 server_info = ""
 
+                # print("Comando: " + user_command)
                 if user_command == "CREATE":
                     response = self.create(key, user_data)
                     server_info = "SERVER - CREATE"
@@ -185,12 +187,13 @@ class ServerNew(standard_pb2_grpc.StandardServicer):
                     server_info = "SERVER - DELETE"
 
                 else:
-                    response = "%s nao e um comando valido" % user_command
+                    response = "%s not a valid command." % user_command
 
                 if not set_up:
-                    server_info += " (FROM ADDRESS %s )\n" % str(client_address)
+                    server_info += " (FROM ADDRESS %s)\n" % str(
+                        context._rpc_event.call_details.host)
                     print(server_info + response)
-                    connection.send(response.encode())
+                    reply.message = response
                 else:
                     break
 
@@ -213,54 +216,31 @@ class ServerNew(standard_pb2_grpc.StandardServicer):
 
         # self.run()
 
-    # Essa função é o loop principal do programa - que roda na thread inicial - ele escuta por conexões e cria threads para gerenciá-las
-    def run(self):
-
-        print("Servidor recebendo conexoes")
-
-        while True:
-            try:
-                connection, client_address = self.sock.accept()
-                receiveT = threading.Thread(
-                    target=self.recv_command, args=(connection, client_address))
-                receiveT.setDaemon(True)
-                receiveT.start()
-            except KeyboardInterrupt:
-                self.event.set()
-                print("\nClosed by admin")
-                self.sock.close()
-                break
-
     # Funções GRPC
-    def Create(self, request: standard_pb2.StandardRequest, context):
-        print('CREATE GPRC')
+    def Restart(self, request, context):
+        if (request.public_key == self.public_key):
+            print('Restarting server command.')
+            self = ServerNew()
+            self.start()
+            return standard_pb2.StandardReply(message='OK - Restart.\n')
+        else:
+            return standard_pb2.StandardReply(message='NOK - Restart.\n')
+
+    def Create(self, request, context):
         request.method = 'CREATE'
         return self.recv_command_grpc(request, context)
 
     def Read(self, request, context):
-        print('READ GPRC')
         request.method = 'READ'
         return self.recv_command_grpc(request, context)
 
     def Update(self, request, context):
-        print('UPDATE GPRC')
         request.method = 'UPDATE'
         return self.recv_command_grpc(request, context)
 
     def Delete(self, request, context):
-        print('DELETE GPRC')
         request.method = 'DELETE'
         return self.recv_command_grpc(request, context)
-
-    def recv_command_grpc(self, request, context):
-
-        print("\nNew connection from %s\n" % str(context))
-
-        if request:
-            self.recv_queue.put((request, context, ''))
-            return standard_pb2.StandardReply(key=request.key, value=request.value, message="SUCCESS: Req OK.\n")
-        else:
-            return standard_pb2.StandardReply(message="ERROR: Req NOK.\n")
 
     # Funções correspondentes ao CRUD
     def create(self, key, value):
@@ -305,7 +285,6 @@ class ServerNew(standard_pb2_grpc.StandardServicer):
 
         return response
 # ======================================================
-
 # Fim da classe Server ================================================================================================================
 
 

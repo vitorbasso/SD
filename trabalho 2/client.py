@@ -2,16 +2,17 @@ import threading
 import socket
 import time
 
+
 class Client:
 
-#=====================================================================================================================================
+    # =====================================================================================================================================
 
-#=====================================================================================================================================
-#Construtor - Inicializa as configurações e estabelece conexão com o host usando os dados em settings.txt
+    # =====================================================================================================================================
+    # Construtor - Inicializa as configurações e estabelece conexão com o host usando os dados em settings.txt
 
     def __init__(self):
 
-        #Tenta pegar as informações do servidor de settings.txt para poder se conectar a ele - caso não haja settings.txt a conexão não será realizada
+        # Tenta pegar as informações do servidor de settings.txt para poder se conectar a ele - caso não haja settings.txt a conexão não será realizada
         try:
             with open("settings.txt", "r") as settings:
                 i = 0
@@ -28,20 +29,20 @@ class Client:
 
         print("Porta: %d, ip_address: %s" % (self.port, self.ip_address))
 
-        #Realiza a conexão com o servidor por meio de sockets
+        # Realiza a conexão com o servidor por meio de sockets
         self.event = threading.Event()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_address = (self.ip_address, self.port)
         self.sock.connect(self.server_address)
         print(" conected")
 
-#=====================================================================================================================================
+# =====================================================================================================================================
 
-#=====================================================================================================================================
-#Lê os comandos do usuário, os valida e, então, manda para o servidor executar
+# =====================================================================================================================================
+# Lê os comandos do usuário, os valida e, então, manda para o servidor executar
 
     def issue_command(self):
-        
+
         while not self.event.is_set():
             self.print_instructions()
             command = input()
@@ -51,21 +52,23 @@ class Client:
                 self.sock.close()
                 break
             elif self.is_valid(command):
-                #Se o comando for válido, envia ele para o servidor
-                self.sock.send(command.encode())        
+                # Se o comando for válido, envia ele para o servidor
+                self.sock.send(command.encode())
             else:
                 print("Invalid Command")
- 
-#=====================================================================================================================================
 
-#=====================================================================================================================================
-#Recebe os comandos do usuário e verifica se estão formatados da maneira correta para serem processados pelo servidor
-   
+# =====================================================================================================================================
+
+# =====================================================================================================================================
+# Recebe os comandos do usuário e verifica se estão formatados da maneira correta para serem processados pelo servidor
+
     def is_valid(self, user_input):
 
-        query = user_input.split()
+        query = user_input.split(",")
 
-        if len(query) < 2:
+        if query[0] == "RESTART":
+            return True
+        elif len(query) < 2:
             return False
         elif query[1].isdigit():
 
@@ -74,15 +77,13 @@ class Client:
             elif query[0] == "READ" or query[0] == "DELETE":
                 if len(query) == 2:
                     return True
-
         return False
 
 
+# =====================================================================================================================================
 
-#=====================================================================================================================================
-
-#=====================================================================================================================================
-#Recebe as respostas do servidor (OK e NOK) e as exibe ao usuário
+# =====================================================================================================================================
+# Recebe as respostas do servidor (OK e NOK) e as exibe ao usuário
 
     def recv_result(self):
 
@@ -97,10 +98,10 @@ class Client:
             print("\nSERVER RESPONSE:\n%s" % server_response)
             print("\n")
 
-#=====================================================================================================================================
+# =====================================================================================================================================
 
-#=====================================================================================================================================
-#Simples função para formatar as instruções e facilitar para outras funções as printarem
+# =====================================================================================================================================
+# Simples função para formatar as instruções e facilitar para outras funções as printarem
 
     def print_instructions(self):
 
@@ -119,14 +120,14 @@ class Client:
               "~                                                       ~\n"
               "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
-#=====================================================================================================================================
+# =====================================================================================================================================
 
-#=====================================================================================================================================
-#Função a ser chamada para iniciar o cliente - cria a thread de exibição e fica esperando por comandos
+# =====================================================================================================================================
+# Função a ser chamada para iniciar o cliente - cria a thread de exibição e fica esperando por comandos
 
     def start(self):
 
-        display_thread = threading.Thread(target = self.recv_result)
+        display_thread = threading.Thread(target=self.recv_result)
         display_thread.setDaemon(True)
         display_thread.start()
 
@@ -138,14 +139,14 @@ class Client:
         else:
             print("Server is down")
 
-#=====================================================================================================================================
+# =====================================================================================================================================
 
-#Fim da classe Client -----------------
+# Fim da classe Client -----------------
 
-#=====================================================================================================================================
-  
+# =====================================================================================================================================
+
 
 if __name__ == '__main__':
-    
+
     cliente = Client()
     cliente.start()

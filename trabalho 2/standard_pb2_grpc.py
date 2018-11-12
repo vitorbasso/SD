@@ -34,6 +34,11 @@ class StandardStub(object):
         request_serializer=standard__pb2.StandardRequest.SerializeToString,
         response_deserializer=standard__pb2.StandardReply.FromString,
         )
+    self.Restart = channel.unary_unary(
+        '/standard.Standard/Restart',
+        request_serializer=standard__pb2.ResetRequest.SerializeToString,
+        response_deserializer=standard__pb2.StandardReply.FromString,
+        )
 
 
 class StandardServicer(object):
@@ -68,6 +73,13 @@ class StandardServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def Restart(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_StandardServicer_to_server(servicer, server):
   rpc_method_handlers = {
@@ -89,6 +101,11 @@ def add_StandardServicer_to_server(servicer, server):
       'Delete': grpc.unary_unary_rpc_method_handler(
           servicer.Delete,
           request_deserializer=standard__pb2.StandardRequest.FromString,
+          response_serializer=standard__pb2.StandardReply.SerializeToString,
+      ),
+      'Restart': grpc.unary_unary_rpc_method_handler(
+          servicer.Restart,
+          request_deserializer=standard__pb2.ResetRequest.FromString,
           response_serializer=standard__pb2.StandardReply.SerializeToString,
       ),
   }

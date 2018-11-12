@@ -11,16 +11,19 @@ service Standard {
   rpc Read   (StandardRequest) returns (StandardReply) {}
   rpc Update (StandardRequest) returns (StandardReply) {}
   rpc Delete (StandardRequest) returns (StandardReply) {}
+  rpc Restart(ResetRequest) returns(StandardReply) {}
+}
+
+message ResetRequest {
+  string public_key = 1;
 }
 
 message StandardRequest {
   int32 key = 1;
-  int32 value = 2;
+  string value = 2;
   string method = 3;
 }
 
 message StandardReply {
-  int32 key = 1;
-  int32 value = 2;
-  string message = 3;
+  string message = 1;
 }
