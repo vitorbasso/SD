@@ -81,15 +81,17 @@ class Client:
 
     def CreateRequisition(self, command):
         command = command.split(" ")
+        
+        data = " ".join(map(str, command[2:])) if len(command) > 2 else ""
         if (command[0] == "CREATE"):
             return self.stub.Create(standard_pb2.StandardRequest(
-                key=int(command[1]), value=command[2]))
+                key=int(command[1]), value=data))
         elif (command[0] == "READ"):
             return self.stub.Read(standard_pb2.StandardRequest(
                 key=int(command[1])))
         elif (command[0] == "UPDATE"):
             return self.stub.Update(standard_pb2.StandardRequest(
-                key=int(command[1]), value=command[2]))
+                key=int(command[1]), value=data))
         elif (command[0] == "DELETE"):
             return self.stub.Delete(standard_pb2.StandardRequest(
                 key=int(command[1])))

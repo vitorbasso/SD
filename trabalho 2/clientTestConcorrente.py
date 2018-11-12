@@ -1,7 +1,10 @@
 import threading
-import socket
 import time
 import client
+
+import grpc
+import standard_pb2
+import standard_pb2_grpc
 
 class ClientTest(client.Client):
 
@@ -11,31 +14,37 @@ class ClientTest(client.Client):
 
 
     def issue_command(self, command):
-        
-        if command == "sair":
+
+        if self.is_valid(command):
+            # Se o comando for válido, envia ele para o servidor
+            response = self.CreateRequisition(command)
+            if not response:
+                print("Fail with requisition.\n")
+            else:
+                print(response.message)
+
+            # self.sock.send(command.encode())
+            # response = self.sock.recv(self.buffer_size).decode()
+        elif command == "sair":
             self.event.set()
-            self.sock.close()
-        elif self.is_valid(command):
-            #Se o comando for válido, envia ele para o servidor
-            self.sock.send(command.encode())
-            response = self.sock.recv(self.buffer_size).decode()
-            print(response) 
+            # self.sock.close()
         else:
             print("Invalid Command")
-        return response
+        return response.message
 
     def issue_silent_command(self, command):
-        
+
         if command == "sair":
             self.event.set()
-            self.sock.close()
+            # self.sock.close()
         elif self.is_valid(command):
-            #Se o comando for válido, envia ele para o servidor
-            self.sock.send(command.encode())
-            response = self.sock.recv(self.buffer_size).decode()
+            response = self.CreateRequisition(command)
+            # Se o comando for válido, envia ele para o servidor
+            # self.sock.send(command.encode())
+            #response = self.sock.recv(self.buffer_size).decode()
         else:
             print("Invalid Command")
-        return response
+        return response.message
 
     def teste1(self, start):
         #TESTE 1
@@ -85,13 +94,9 @@ class ClientTest(client.Client):
         time.sleep(2)
         self.issue_command("CREATE %d item 5" % (start + (10 * 7)))
         time.sleep(5)
-
-        self.sock.close()
+        self.issue_command("RESTART")
 
     def teste4(self, start):
-
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect((self.server_address))
 
         self.issue_command("READ %d" % (start + (10 * 3)))
         time.sleep(2)
@@ -119,7 +124,7 @@ class ClientTest(client.Client):
         self.issue_silent_command("CREATE %d 1" % (start + (10 * 13)))
         for i in range(start + 10 * 14,start + 10 * 14 + 1000 * 10, 10):  
             v = self.issue_silent_command("READ %d" % (i - 10))
-            v = v[v.rfind('<')+1 : v.rfind('>')]
+            v = self.extract(v)
             v = int(v)       
             self.issue_silent_command("CREATE %d %d" % (i, (v + 1)))
             
@@ -128,6 +133,10 @@ class ClientTest(client.Client):
         self.issue_command("READ %d" % (start + (10 * 1013)))
 
                 
+    def extract(self, v):
+        v = v[v.rfind('<')+1: v.rfind('>')]
+        return v
+        
     def start(self, id):
 
         self.teste3(id)

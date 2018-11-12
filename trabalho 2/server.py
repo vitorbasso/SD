@@ -2,6 +2,7 @@ import socket
 import time
 import threading
 import queue
+import os
 
 
 # GRPC =================================================
@@ -17,6 +18,7 @@ DEFAULT_BUFFER_SIZE = 1024
 DEFAULT_IP_ADDRESS = "127.0.1.1"
 DEFAULT_PUBLIC_KEY = "c144efbb-c793-4d57-b6ed-7ee40321656e"
 _ONE_DAY_IN_SECONDS = 60 * 60 * 24
+DEFAULT_LOG_NUMBER = 0
 
 
 class ServerNew(standard_pb2_grpc.StandardServicer):
@@ -38,6 +40,8 @@ class ServerNew(standard_pb2_grpc.StandardServicer):
 
         input_port = DEFAULT_PORT
         input_buffer_size = DEFAULT_BUFFER_SIZE
+        self.timer = None
+        self.time_between_snaps = 10
 
         # Tenta pegar as informações port, buffer_size de settings.txt - caso não exista ele cria um novo settings.txt com os valores fornecidos ou padrões para
         # port, buffer_size e ip_address
@@ -78,6 +82,17 @@ class ServerNew(standard_pb2_grpc.StandardServicer):
         else:
             pass
 
+        try:
+            with open("last_snap.txt", "r") as last_snap:
+                for line in last_snap:
+                    self.logNumber = int(line)
+        except IOError:
+            with open("last_snap.txt", "w") as last_snap:
+                last_snap.write(str(DEFAULT_LOG_NUMBER))
+                self.logNumber = DEFAULT_LOG_NUMBER
+        else:
+            pass
+
         # Endereco do servidor
         # print("port: %s, buffer-size: %s" % (self.port, self.buffer_size))
         self.server_address = self.ip_address + ":" + str(self.port)
@@ -101,8 +116,19 @@ class ServerNew(standard_pb2_grpc.StandardServicer):
     def loadDataBase(self):
 
         try:
+            with open("snap." + str(self.logNumber) + ".txt", "r") as file:
+                for line in file:
+                    args = line.split(" ")
+                    key = int(args[0])
+                    data = str(" ".join(args[1:]))
+                    data = data.rstrip()
+                    self.data_base[key] = data
+        except:
+            pass
 
-            with open("logfile.txt", 'r') as log:
+        try:
+
+            with open("logfile." + str(self.logNumber) + ".txt", 'r') as log:
                 print("Restoring from log - ")
                 for line in log:
                     self.execute_command(True, line)
@@ -131,7 +157,7 @@ class ServerNew(standard_pb2_grpc.StandardServicer):
             self.recv_queue.put((request, context, reply))
             # TODO: Fazer método que espera enquanto requisição não está pronta.
             while not reply.message:
-                a = 1
+                pass
             return reply
         else:
             return standard_pb2.StandardReply(message="ERROR: Req NOK.\n")
@@ -147,11 +173,10 @@ class ServerNew(standard_pb2_grpc.StandardServicer):
 
     # Escreve os comandos de F2 para um arquivo log
     def log_command(self):
-
-        with open('logfile.txt', 'a') as log:
-            while not self.event.is_set():
-                if not self.log_queue.empty():
-                    request, context = self.log_queue.get()
+        while not self.event.is_set():
+            if not self.log_queue.empty():
+                with open("logfile." + str(self.logNumber) + ".txt", 'w') as log:
+                    request, _ = self.log_queue.get()
                     if request.method != "READ":
                         log.write(request.method + ' ' + str(request.key) +
                                   ' ' + str(request.value) + "\n")
@@ -206,6 +231,37 @@ class ServerNew(standard_pb2_grpc.StandardServicer):
                     break
 
     # Função a ser chamada para iniciar o servidor - cria as threads e começa a receber conexões
+
+    def updateLog(self):
+        self.logNumber += 1
+        try:
+            with open("snap." + str(self.logNumber) + ".txt", "a") as snap:
+                for key in list(self.data_base.keys()):
+                    snap.write(str(key) + " " + self.data_base[key] + "\n")
+                snap.flush()
+            if os.path.isfile("snap." + str(self.logNumber - 3) + ".txt"):
+                os.remove("snap." + str(self.logNumber - 3) + ".txt")
+            if os.path.isfile("last_snap.txt"):
+                os.remove("last_snap.txt")
+            try:
+                with open("last_snap.txt" , "a" ) as last_snap:
+                    last_snap.write(str(self.logNumber))
+            except:
+                pass
+        except:
+            pass
+
+        if os.path.isfile("logfile." + str(self.logNumber - 3) + ".txt"):
+            os.remove("logfile." + str(self.logNumber - 3) + ".txt")
+
+    def snapStart(self):
+        while not self.event.is_set():
+            time.sleep(self.time_between_snaps)
+            self.updateLog()
+            
+            
+ 
+   
     def start(self):
 
         self.loadDataBase()
@@ -221,6 +277,10 @@ class ServerNew(standard_pb2_grpc.StandardServicer):
         execute_thread = threading.Thread(target=self.execute_command)
         execute_thread.setDaemon(True)
         execute_thread.start()
+
+        snap_thread = threading.Thread(target=self.snapStart)
+        snap_thread.setDaemon(True)
+        snap_thread.start()
 
         # self.run()
 
